@@ -85,10 +85,10 @@ class Sign():
     def main(self):
         while self.running:
             if config.HTTP_CABLE_ONLY:
-                if self.poll_network():
+                #if self.poll_network():
                     self.network_found()
-                else:
-                    self.network_lost()
+                # else:
+                #     self.network_lost()
             else:
                 # repeated invocations do nothing
                 self.network_found()
@@ -129,7 +129,9 @@ class Sign():
         return self.playlist
 
 def run_script():
-    home_dir = '~'
+    #home_dir = '~'   # TODO is hart Coded
+    home_dir = os.path.dirname(os.path.realpath(__file__))   # TODO is hart Coded
+    home_dir = "/home/linus/Documents/libresign_debug/libresign"    # TODO is hart Coded
     args = sys.argv
 
     for i in range(len(args)):
@@ -149,20 +151,20 @@ def run_script():
             config.NO_LIBREOFFICE = True
 
         # run as a digital sign
-        if arg == '--sign':
-            config.CONFERENCE = False
+        # if arg == '--sign':
+        #     config.CONFERENCE = False
 
         # default anyway
         if arg == '--conference':
             config.CONFERENCE = True
 
-        if arg == '--noremote':
-            config.JS_REMOTE = False
+        # if arg == '--noremote':
+        #     config.JS_REMOTE = False
 
-        if arg == '--libresign-home':
-            home_dir = args[i + 1]
-            i += 1
-            print('libresign home', home_dir)
+        # if arg == '--libresign-home':
+        #     home_dir = args[i + 1]
+        #     i += 1
+        #     print('libresign home', home_dir)
 
     # start JS Remote server
     args = ['python3', '-m', 'irpjs.irp']
