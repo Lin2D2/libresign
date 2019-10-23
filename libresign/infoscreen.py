@@ -21,16 +21,41 @@
 # this runs as a separate process
 
 from multiprocessing import Process
+from PIL import ImageTk
+from PIL import Image as Image_
 import tkinter as tk
+import qrcode, os
 
 proc = None
 bg_color = "#55A555"
+
 
 class TKInfoScreen(tk.Frame):
     def __init__ (self, master=None):
         super().__init__(master)
         self.master = master
+        self.state = False
+        self.master.bind("<Escape>", self.end_fullscreen)
         self.pack()
+
+    # TODO add listener here for event in unoremote
+    def toggle_fullscreen(self, event=None, state=None, mode=0):
+        print("this event is run l.244 unoremote level 5")
+        if state is None:
+            self.state = not self.state
+        else:
+            self.state = state
+        if mode == 0 or 1:
+            self.master.attributes('-topmost', self.state)
+        if mode == 1:
+            self.master.attributes("-fullscreen", self.state)
+        return "break"
+
+    def end_fullscreen(self, event=None):
+        self.state = False
+        self.master.attributes("-fullscreen", self.state)
+        self.master.attributes('-topmost', self.state)
+        return "break"
 
     def setup (self, url):
         font        = ('Helvetica', 30)
@@ -41,19 +66,40 @@ class TKInfoScreen(tk.Frame):
         self.msg_txt = tk.Label(self.master)
         self.msg_txt['text'] = \
             'Visit the URL below to reach the control panel.'
-        self.msg_txt.configure(foreground='white', 
+        self.msg_txt.configure(foreground='white',
                                font=font, background=bg_color)
-        self.msg_txt.place(relx='0.5', rely='0.4', anchor='center', 
+        self.msg_txt.place(relx='0.5', rely='0.4', anchor='center',
                            height=height)
 
         # show the URL to which the end-users should connect to reach
         # the control panel
+
         self.url_text = tk.Label(self.master)
         self.url_text["text"] = url
-        self.url_text.configure(background=bg_color, foreground='white', 
+        self.url_text.configure(background=bg_color, foreground='white',
                                 font=font)
         self.url_text.place(relx='0.5', rely='0.5', anchor='center', 
                             height=height)
+
+        # Qr Code !!!
+
+        imagepath = os.getcwd()
+
+        qr = qrcode.QRCode(
+            version=5,
+            error_correction=qrcode.constants.ERROR_CORRECT_H,
+            box_size=6,
+            border=8
+        )
+        qr.add_data(url)
+        qr.make()
+        img = qr.make_image(fill_color="black", back_color=bg_color)
+        img.save(imagepath + '/data.png')
+
+        img = ImageTk.PhotoImage(Image_.open(imagepath + '/data.png'))
+
+        self.qrcode = tk.Label(self.master, image=img)
+        self.qrcode.place(relx='0.5', rely='0.7', anchor='center')
 
         # link to code repo
         code_site = tk.Label(self.master)
@@ -77,7 +123,7 @@ def info (url):
     h = root.winfo_screenheight()
     root.geometry("%dx%d+0+0" % (w, h))
     root.attributes('-fullscreen', True)
-    root.attributes('-topmost', True)
+    # root.attributes('-topmost', True)   # TODO chabge this back
 
     app = TKInfoScreen(master=root)
     app.setup(url)
