@@ -69,6 +69,7 @@ class UNOClient():
         self.previews           = []
 
     def play_file (self, filename, looping):
+        # TODO add event here
         filename = os.path.realpath(filename)
         flags = 8
         self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, ())
@@ -91,7 +92,8 @@ class UNOClient():
             page.TransitionType = 0
 
         self.previews = self.load_previews()
-        print('previews', len(self.previews))
+        if self.previews is not None:
+            print('previews', len(self.previews))
 
         logging.debug("play file %s" % filename)
         self.file_open = True
@@ -240,6 +242,7 @@ class UNOClient():
         if self.docu.Presentation.isRunning():
             return
 
+        # TODO add event here
         self.docu.Presentation.start()
         pages = self.docu.DrawPages
         self.locontrol.on_slideshow_started(pages.Count, 0)
@@ -343,6 +346,7 @@ class UNOClient():
         self.connected = True
 
         self.presentation_start()
+
 
     def stop (self):
         pass
