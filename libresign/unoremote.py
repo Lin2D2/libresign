@@ -19,7 +19,7 @@ from sys import stderr
 import os, time, sys, logging
 import subprocess, base64
 
-from multiprocessing import Process
+from multiprocessing import Process, Pipe
 from PIL import ImageTk
 from PIL import Image as Image_
 from tkinter import *
@@ -35,11 +35,13 @@ IR = IPython.embed
 from com.sun.star.beans import PropertyValue
 from com.sun.star.beans.PropertyState import DIRECT_VALUE
 
+
 # This class handles communication with the running LibreOffice instance
 connection_url = 'uno:pipe,name=libbo;urp;StarOffice.ComponentContext'
 
 proc = None
 app = None
+parent_conn = None
 bg_color = "#55A555"
 
 # This class receives messages (IRP) from the UNOClient
@@ -68,7 +70,7 @@ class LiboListener ():
 # This is the Infoscreen
 
 class InfoScreen(tk.Frame):
-    def __init__(self, master=None, url=None):
+    def __init__(self, master=None, url=None, conn=None):
         tk.Frame.__init__(self, master)
         self.master = master
         self.state = False
@@ -76,6 +78,10 @@ class InfoScreen(tk.Frame):
         self.pack(fill=tk.BOTH, expand=1)
         self.url = url
         self.setup()
+        response = conn.recv()
+        if response[0] == "toggle_fullscreen":
+            logging.debug("toggle_fullscreen")
+
 
         # TODO add listener here for event in unoremote
     def toggle_fullscreen(self, event=None, state=None, mode=0):
@@ -134,6 +140,14 @@ class InfoScreen(tk.Frame):
         img = qr.make_image(fill_color="black", back_color=bg_color)
         img.save(imagepath + '/data_png.png')
 
+        # import cairosvg
+        #
+        # cairosvg.svg2png(
+        #     url="/home/linus/Documents/fresh_libresign_debug/libresign/libresign/test_png.svg",
+        #     write_to="/home/linus/Documents/fresh_libresign_debug/libresign/libresign/test_png.png")
+        #
+        # load = Image_.open("/home/linus/Documents/fresh_libresign_debug/libresign/libresign/test_png.svg")
+
         load = Image_.open(imagepath + '/data_png.png')
         render = ImageTk.PhotoImage(load)
         qrcode_ = tk.Label(self, image=render)
@@ -156,32 +170,38 @@ class InfoScreen(tk.Frame):
                             height=height)
 
 
-def info(url):
+def info(url, conn):
     root = tk.Tk()
     root.wm_title("Tkinter window")
     w = root.winfo_screenwidth()
     h = root.winfo_screenheight()
     root.geometry("%dx%d+0+0" % (w, h))
     root.attributes('-fullscreen', True)
-    root.attributes('-topmost', True)
+    # root.attributes('-topmost', True)
 
     global app
-    app = InfoScreen(master=root, url=url)
+    app = InfoScreen(master=root, url=url, conn=conn)
     app.configure(background=bg_color)
     logging.debug(str("\napp:\n" + str(app) + "\n"))
     root.mainloop()
 
 def start_info (url):
     global proc
-    proc = Process(target=info, args=(url,))
+    global parent_conn
+    parent_conn, child_conn = Pipe()
+    proc = Process(target=info, args=(url, child_conn,))
     proc.start()
+    parent_conn.send(["toggle_fullscreen", False, 1])
     # proc.join()
 
 def stop_info ():
     global proc
+    global parent_conn
 
     if proc:
         proc.terminate()
+    if parent_conn:
+        parent_conn.close()
 
 
 # This class handles communication with the running LibreOffice instance
@@ -198,16 +218,16 @@ class UNOClient():
 
     def play_file (self, filename, looping):
         # TODO event
-        print("at line 212")
-        global app
-        print("\napp:")
-        print(app)
-        print("\n")
-        # if app:
-        #     app.toggle_fullscreen(state=False, mode=0)
-        # filename = os.path.realpath(filename)
         flags = 8
-        self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, ())
+        # self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, ())
+
+        data = []
+        # TODO the pixel width/height are inaccurate, the full-width
+        #      image is created instead
+        data.append(PropertyValue("OpenMode", 0, "open", DIRECT_VALUE))
+        data.append(PropertyValue("Hidden", 0, True, DIRECT_VALUE))
+
+        self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, data)
 
         # make sure the presentation runs properly
         self.docu.Presentation.IsAlwaysOnTop        = True
@@ -304,13 +324,6 @@ class UNOClient():
         logging.debug("close file")
         self.file_open = False
         # TODO event
-        print("at line 312")
-        global app
-        print("\napp:")
-        print(app)
-        print("\n")
-        # if app:
-        #     app.toggle_fullscreen(state=True, mode=1)
 
     #
     def is_file_open (self):
@@ -386,13 +399,6 @@ class UNOClient():
             return
 
         # TODO event
-        print("at line 391")
-        global app
-        print("\napp:")
-        print(app)
-        print("\n")
-        # if app:
-        #     app.toggle_fullscreen(state=False, mode=1)
         self.docu.Presentation.start()
         pages = self.docu.DrawPages
         self.locontrol.on_slideshow_started(pages.Count, 0)
@@ -419,13 +425,6 @@ class UNOClient():
         self.docu.Presentation.end()
         self.locontrol.on_slideshow_ended()
         # TODO event
-        print("at line 421")
-        global app
-        print("\napp:")
-        print(app)
-        print("\n")
-        # if app:
-        #     app.toggle_fullscreen(state=True, mode=1)
 
     def blank_screen (self):
         if not self.get_document():
@@ -503,13 +502,6 @@ class UNOClient():
 
         self.connected = True
         # TODO event
-        print("at line 502")
-        global app
-        print("\napp:")
-        print(app)
-        print("\n")
-        # if app:
-        #     app.toggle_fullscreen(state=False, mode=1)
         self.presentation_start()
 
 
