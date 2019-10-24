@@ -19,7 +19,7 @@ from sys import stderr
 import os, time, sys, logging
 import subprocess, base64
 
-from multiprocessing import Process, Pipe
+from multiprocessing import Process
 from PIL import ImageTk
 from PIL import Image as Image_
 from tkinter import *
@@ -39,7 +39,6 @@ from com.sun.star.beans.PropertyState import DIRECT_VALUE
 # This class handles communication with the running LibreOffice instance
 connection_url = 'uno:pipe,name=libbo;urp;StarOffice.ComponentContext'
 
-proc = None
 app = None
 parent_conn = None
 bg_color = "#55A555"
@@ -70,7 +69,7 @@ class LiboListener ():
 # This is the Infoscreen
 
 class InfoScreen(tk.Frame):
-    def __init__(self, master=None, url=None, conn=None):
+    def __init__(self, master=None, url=None):
         tk.Frame.__init__(self, master)
         self.master = master
         self.state = False
@@ -78,10 +77,6 @@ class InfoScreen(tk.Frame):
         self.pack(fill=tk.BOTH, expand=1)
         self.url = url
         self.setup()
-        response = conn.recv()
-        if response[0] == "toggle_fullscreen":
-            logging.debug("toggle_fullscreen")
-
 
         # TODO add listener here for event in unoremote
     def toggle_fullscreen(self, event=None, state=None, mode=0):
@@ -170,7 +165,7 @@ class InfoScreen(tk.Frame):
                             height=height)
 
 
-def info(url, conn):
+def info(url):
     root = tk.Tk()
     root.wm_title("Tkinter window")
     w = root.winfo_screenwidth()
@@ -180,28 +175,22 @@ def info(url, conn):
     # root.attributes('-topmost', True)
 
     global app
-    app = InfoScreen(master=root, url=url, conn=conn)
+    app = InfoScreen(master=root, url=url)
     app.configure(background=bg_color)
     logging.debug(str("\napp:\n" + str(app) + "\n"))
     root.mainloop()
 
 def start_info (url):
     global proc
-    global parent_conn
-    parent_conn, child_conn = Pipe()
-    proc = Process(target=info, args=(url, child_conn,))
+    proc = Process(target=info, args=(url,))
     proc.start()
-    parent_conn.send(["toggle_fullscreen", False, 1])
     # proc.join()
 
 def stop_info ():
     global proc
-    global parent_conn
 
     if proc:
         proc.terminate()
-    if parent_conn:
-        parent_conn.close()
 
 
 # This class handles communication with the running LibreOffice instance
