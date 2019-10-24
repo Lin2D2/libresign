@@ -200,15 +200,17 @@ class UNOClient():
     def play_file (self, filename, looping):
         # TODO event
         flags = 8
-        # self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, ())
-
+        logging.debug(["play file in unoremote", looping, filename])
+        self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, ())
+        logging.debug("wir kommen bis hier")
         data = []
         # TODO the pixel width/height are inaccurate, the full-width
         #      image is created instead
-        data.append(PropertyValue("OpenMode", 0, "open", DIRECT_VALUE))
-        data.append(PropertyValue("Hidden", 0, True, DIRECT_VALUE))
 
-        self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, data)
+        # data.append(PropertyValue("OpenMode", 0, "open", DIRECT_VALUE))
+        # data.append(PropertyValue("Hidden", 0, True, DIRECT_VALUE))
+        #
+        # self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, data)
 
         # make sure the presentation runs properly
         self.docu.Presentation.IsAlwaysOnTop        = True
