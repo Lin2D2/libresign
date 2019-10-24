@@ -94,11 +94,16 @@ class TKInfoScreen(tk.Frame):
         qr.add_data(url)
         qr.make()
         img = qr.make_image(fill_color="black", back_color=bg_color)
-        img.save(imagepath + '/data.png')
+        img.save(imagepath + '/data_png.png')
 
-        img = ImageTk.PhotoImage(Image_.open(imagepath + '/data.png'))
+        img = Image_.open(imagepath + '/data_png.png')
+        img = img.convert('RGB').convert('P', palette=Image_.ADAPTIVE)
+        img.save(imagepath + '/data_gif.gif', format='GIF')
 
-        self.qrcode = tk.Label(self.master, image=img)
+        load = Image_.open(Image_.open(imagepath + '/data_gif.gif'))
+        render = ImageTk.PhotoImage(load)
+        self.qrcode = tk.Label(self.master)
+        self.qrcode["image"] = render
         self.qrcode.place(relx='0.5', rely='0.7', anchor='center')
 
         # link to code repo
