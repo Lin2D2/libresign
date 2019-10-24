@@ -135,14 +135,6 @@ class InfoScreen(tk.Frame):
         img = qr.make_image(fill_color="black", back_color=bg_color)
         img.save(imagepath + '/data_png.png')
 
-        # import cairosvg
-        #
-        # cairosvg.svg2png(
-        #     url="/home/linus/Documents/fresh_libresign_debug/libresign/libresign/test_png.svg",
-        #     write_to="/home/linus/Documents/fresh_libresign_debug/libresign/libresign/test_png.png")
-        #
-        # load = Image_.open("/home/linus/Documents/fresh_libresign_debug/libresign/libresign/test_png.svg")
-
         load = Image_.open(imagepath + '/data_png.png')
         render = ImageTk.PhotoImage(load)
         qrcode_ = tk.Label(self, image=render)
