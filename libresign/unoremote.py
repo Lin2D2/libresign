@@ -66,15 +66,6 @@ class LiboListener ():
         pass
 
 # This is the Infoscreen
-from multiprocessing import Process
-from PIL import ImageTk
-from PIL import Image as Image_
-import tkinter as tk
-import qrcode
-import os
-
-proc = None
-bg_color = "#55A555"
 
 class InfoScreen(tk.Frame):
     def __init__(self, master=None, url=None):
@@ -93,8 +84,7 @@ class InfoScreen(tk.Frame):
             self.state = not self.state
         else:
             self.state = state
-        if mode == 0 or 1:
-            self.master.attributes('-topmost', self.state)
+        self.master.attributes('-topmost', self.state)
         if mode == 1:
             self.master.attributes("-fullscreen", self.state)
         return "break"
@@ -173,11 +163,12 @@ def info(url):
     h = root.winfo_screenheight()
     root.geometry("%dx%d+0+0" % (w, h))
     root.attributes('-fullscreen', True)
-    # root.attributes('-topmost', True)
+    root.attributes('-topmost', True)
 
     global app
     app = InfoScreen(master=root, url=url)
     app.configure(background=bg_color)
+    logging.debug(str("\napp:\n" + str(app) + "\n"))
     root.mainloop()
 
 def start_info (url):
@@ -206,8 +197,15 @@ class UNOClient():
         self.previews           = []
 
     def play_file (self, filename, looping):
-        # TODO add event here
-        filename = os.path.realpath(filename)
+        # TODO event
+        print("at line 212")
+        global app
+        print("\napp:")
+        print(app)
+        print("\n")
+        # if app:
+        #     app.toggle_fullscreen(state=False, mode=0)
+        # filename = os.path.realpath(filename)
         flags = 8
         self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, ())
 
@@ -305,9 +303,14 @@ class UNOClient():
 
         logging.debug("close file")
         self.file_open = False
+        # TODO event
+        print("at line 312")
         global app
-        if app:
-            app.toggle_fullscreen(state=True, mode=1)
+        print("\napp:")
+        print(app)
+        print("\n")
+        # if app:
+        #     app.toggle_fullscreen(state=True, mode=1)
 
     #
     def is_file_open (self):
@@ -382,10 +385,14 @@ class UNOClient():
         if self.docu.Presentation.isRunning():
             return
 
-        # TODO add event here
+        # TODO event
+        print("at line 391")
         global app
-        if app:
-            app.toggle_fullscreen(state=False, mode=1)
+        print("\napp:")
+        print(app)
+        print("\n")
+        # if app:
+        #     app.toggle_fullscreen(state=False, mode=1)
         self.docu.Presentation.start()
         pages = self.docu.DrawPages
         self.locontrol.on_slideshow_started(pages.Count, 0)
@@ -411,9 +418,14 @@ class UNOClient():
 
         self.docu.Presentation.end()
         self.locontrol.on_slideshow_ended()
+        # TODO event
+        print("at line 421")
         global app
-        if app:
-            app.toggle_fullscreen(state=True, mode=1)
+        print("\napp:")
+        print(app)
+        print("\n")
+        # if app:
+        #     app.toggle_fullscreen(state=True, mode=1)
 
     def blank_screen (self):
         if not self.get_document():
@@ -490,9 +502,14 @@ class UNOClient():
         print("Connected to LibreOffice")
 
         self.connected = True
+        # TODO event
+        print("at line 502")
         global app
-        if app:
-            app.toggle_fullscreen(state=False, mode=1)
+        print("\napp:")
+        print(app)
+        print("\n")
+        # if app:
+        #     app.toggle_fullscreen(state=False, mode=1)
         self.presentation_start()
 
 
