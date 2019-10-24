@@ -19,7 +19,12 @@ from sys import stderr
 import os, time, sys, logging
 import subprocess, base64
 
-from PIL import Image
+from multiprocessing import Process
+from PIL import ImageTk
+from PIL import Image as Image_
+from tkinter import *
+import tkinter as tk
+import qrcode
 
 import uno
 import unohelper
@@ -32,6 +37,10 @@ from com.sun.star.beans.PropertyState import DIRECT_VALUE
 
 # This class handles communication with the running LibreOffice instance
 connection_url = 'uno:pipe,name=libbo;urp;StarOffice.ComponentContext'
+
+proc = None
+app = None
+bg_color = "#55A555"
 
 # This class receives messages (IRP) from the UNOClient
 class LiboListener ():
@@ -47,7 +56,7 @@ class LiboListener ():
     def on_slide_updated (self, slide_number):
         pass
 
-    def on_slide_preview (self, slide_number, image):
+    def on_slide_preview (self, slide_number, image_):
         pass
 
     def focus_info_screen (self):
@@ -55,6 +64,134 @@ class LiboListener ():
 
     def error_no_document (self):
         pass
+
+# This is the Infoscreen
+from multiprocessing import Process
+from PIL import ImageTk
+from PIL import Image as Image_
+import tkinter as tk
+import qrcode
+import os
+
+proc = None
+bg_color = "#55A555"
+
+class InfoScreen(tk.Frame):
+    def __init__(self, master=None, url=None):
+        tk.Frame.__init__(self, master)
+        self.master = master
+        self.state = False
+        self.master.bind("<Escape>", self.end_fullscreen)
+        self.pack(fill=tk.BOTH, expand=1)
+        self.url = url
+        self.setup()
+
+        # TODO add listener here for event in unoremote
+    def toggle_fullscreen(self, event=None, state=None, mode=0):
+        print("this event is run l.244 unoremote level 5")
+        if state is None:
+            self.state = not self.state
+        else:
+            self.state = state
+        if mode == 0 or 1:
+            self.master.attributes('-topmost', self.state)
+        if mode == 1:
+            self.master.attributes("-fullscreen", self.state)
+        return "break"
+
+    def end_fullscreen(self, event=None):
+        self.state = False
+        self.master.attributes("-fullscreen", self.state)
+        self.master.attributes('-topmost', self.state)
+        return "break"
+
+    def setup (self):
+        font        = ('Helvetica', 30)
+        smallfont   = ('Helvetica', 20)
+        # NOTE text height = 50 is somewhat arbitrary
+        height      = '50'
+
+        self.msg_txt = tk.Label(self.master)
+        self.msg_txt['text'] = \
+            'Visit the URL below to reach the control panel.'
+        self.msg_txt.configure(foreground='white',
+                               font=font, background=bg_color)
+        self.msg_txt.place(relx='0.5', rely='0.4', anchor='center',
+                           height=height)
+
+        # show the URL to which the end-users should connect to reach
+        # the control panel
+
+        self.url_text = tk.Label(self.master)
+        self.url_text["text"] = self.url
+        self.url_text.configure(background=bg_color, foreground='white',
+                                font=font)
+        self.url_text.place(relx='0.5', rely='0.5', anchor='center',
+                            height=height)
+
+        # Qr Code !!!
+
+        imagepath = os.getcwd()
+
+        qr = qrcode.QRCode(
+            version=5,
+            error_correction=qrcode.constants.ERROR_CORRECT_H,
+            box_size=6,
+            border=8
+        )
+        qr.add_data(self.url)
+        qr.make()
+        img = qr.make_image(fill_color="black", back_color=bg_color)
+        img.save(imagepath + '/data_png.png')
+
+        load = Image_.open(imagepath + '/data_png.png')
+        render = ImageTk.PhotoImage(load)
+        qrcode_ = tk.Label(self, image=render)
+        qrcode_.image = render
+        qrcode_.place(relx='0.5', rely='0.7', anchor='center')
+
+        # link to code repo
+        code_site = tk.Label(self.master)
+        code_site['text'] = 'Get the code at: https://github.com/LibreOffice/libresign'
+        code_site.configure(background=bg_color, foreground='white',
+                                font=smallfont)
+        code_site.place(relx='0', rely='1.0', anchor='sw',
+                            height=height)
+
+        copyright = tk.Label(self.master)
+        copyright['text'] = 'The Document Foundation'
+        copyright.configure(background=bg_color, foreground='white',
+                                font=smallfont)
+        copyright.place(relx='1.0', rely='1.0', anchor='se',
+                            height=height)
+
+
+def info(url):
+    root = tk.Tk()
+    root.wm_title("Tkinter window")
+    w = root.winfo_screenwidth()
+    h = root.winfo_screenheight()
+    root.geometry("%dx%d+0+0" % (w, h))
+    root.attributes('-fullscreen', True)
+    # root.attributes('-topmost', True)
+
+    global app
+    app = InfoScreen(master=root, url=url)
+    app.configure(background=bg_color)
+    root.mainloop()
+
+def start_info (url):
+    global proc
+    proc = Process(target=info, args=(url,))
+    proc.start()
+    # proc.join()
+
+def stop_info ():
+    global proc
+
+    if proc:
+        proc.terminate()
+
 
 # This class handles communication with the running LibreOffice instance
 class UNOClient():
@@ -168,6 +305,9 @@ class UNOClient():
 
         logging.debug("close file")
         self.file_open = False
+        global app
+        if app:
+            app.toggle_fullscreen(state=True, mode=1)
 
     #
     def is_file_open (self):
@@ -243,6 +383,9 @@ class UNOClient():
             return
 
         # TODO add event here
+        global app
+        if app:
+            app.toggle_fullscreen(state=False, mode=1)
         self.docu.Presentation.start()
         pages = self.docu.DrawPages
         self.locontrol.on_slideshow_started(pages.Count, 0)
@@ -268,6 +411,9 @@ class UNOClient():
 
         self.docu.Presentation.end()
         self.locontrol.on_slideshow_ended()
+        global app
+        if app:
+            app.toggle_fullscreen(state=True, mode=1)
 
     def blank_screen (self):
         if not self.get_document():
@@ -344,7 +490,9 @@ class UNOClient():
         print("Connected to LibreOffice")
 
         self.connected = True
-
+        global app
+        if app:
+            app.toggle_fullscreen(state=False, mode=1)
         self.presentation_start()
 
 
