@@ -25,7 +25,6 @@ from xdo import Xdo
 xdo = Xdo()
 
 from libresign.request import Request
-import libresign.infoscreen as infoscreen
 import libresign.config as config
 import libresign.web as web
 import libresign.unoremote as unoremote
@@ -100,12 +99,12 @@ class LibreOfficeController():
         if config.SHOW_INFO_SCREEN:
             self.info_showing = True
             addr = 'http://' + web.get_address() + ':' + str(config.HTTP_PORT)
-            infoscreen.start_info(addr)
+            unoremote.start_info(addr)
 
     def stop_info_screen (self):
         if config.SHOW_INFO_SCREEN:
             self.info_showing = False
-            infoscreen.stop_info()
+            unoremote.stop_info()
 
     def try_play_file (self):
         filename    = self.signd.playlist.get_current()
