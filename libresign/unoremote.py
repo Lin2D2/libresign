@@ -40,7 +40,6 @@ from com.sun.star.beans.PropertyState import DIRECT_VALUE
 connection_url = 'uno:pipe,name=libbo;urp;StarOffice.ComponentContext'
 
 app = None
-parent_conn = None
 bg_color = "#55A555"
 
 # This class receives messages (IRP) from the UNOClient
@@ -199,17 +198,15 @@ class UNOClient():
 
     def play_file (self, filename, looping):
         # TODO event
+        filename = os.path.realpath(filename)
         flags = 8
-        logging.debug(["play file in unoremote", looping, filename])
-        self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, ())
-        logging.debug("wir kommen bis hier")
-        data = []
-        # TODO the pixel width/height are inaccurate, the full-width
-        #      image is created instead
+        logging.debug(["funktion: play_file | in file: unoremote", looping, filename])
 
+        self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, ())
+
+        # data = []
         # data.append(PropertyValue("OpenMode", 0, "open", DIRECT_VALUE))
         # data.append(PropertyValue("Hidden", 0, True, DIRECT_VALUE))
-        #
         # self.docu = self.desktop.loadComponentFromURL("file://"+filename, self.frame, flags, data)
 
         # make sure the presentation runs properly
@@ -300,6 +297,7 @@ class UNOClient():
 
     # 
     def close_file (self):
+        logging.debug(["funktion: close_file | in file: unoremote", self.docu])
         if self.docu:
             self.docu.dispose()
             self.docu = None
@@ -317,6 +315,7 @@ class UNOClient():
 
     def get_document (self):
         self.docu = self.desktop.getCurrentComponent()
+        logging.debug(["funktion: get_document | in file: unoremote", self.docu])
 
         # Presentation is not available unless we have loaded 
         # a presentation (i think)
@@ -382,6 +381,7 @@ class UNOClient():
             return
 
         # TODO event
+        logging.debug(["funktion: presentation_stop | in file: unoremote", self.docu])
         self.docu.Presentation.start()
         pages = self.docu.DrawPages
         self.locontrol.on_slideshow_started(pages.Count, 0)
@@ -399,6 +399,7 @@ class UNOClient():
             self.locontrol.on_slide_notes(c, notes[c])
 
     def presentation_stop (self):
+        logging.debug(["funktion: presentation_stop | in file: unoremote", self.docu, self.locontrol])
         if not self.get_document():
             return
 
@@ -426,7 +427,7 @@ class UNOClient():
 
         if not self.docu.Presentation.isRunning():
             return
-
+        logging.debug(["funktion: resume | in file: unoremote", self.docu, self.locontrol])
         self.docu.Presentation.Controller.resume()
         self.locontrol.on_slide_updated(0)
 
